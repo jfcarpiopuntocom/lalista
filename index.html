@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>La Lista // NEXUS-7 GUESTLIST OS</title>
+<title>La Lista — Manejo de club y lista de invitados</title>
 <meta name="description" content="La Lista — Sistema de gestión de listas VIP para clubes. ¿Estás en la lista? Sincronización por QR y WhatsApp, eventos expirables.">
 
 <!-- ===== FUENTES (Google Fonts - gratis) ===== -->
@@ -26,20 +26,20 @@
 
 <style>
 :root{
-  --void:#08060d;
-  --panel:#0f0c1a;
-  --panel-2:#151024;
-  --line: rgba(0,255,209,.14);
-  --cyan:#00fff2;
-  --cyan-dim: rgba(0,255,242,.35);
-  --magenta:#ff2ea6;
-  --magenta-dim: rgba(255,46,166,.35);
-  --amber:#ffb32e;
-  --violet:#7b5cff;
-  --red:#ff3860;
-  --green:#39ff88;
-  --text:#e8f4f2;
-  --muted:#7b8b99;
+  --void:#08090b;
+  --panel:#0e1013;
+  --panel-2:#14171b;
+  --line: rgba(120,150,180,.14);
+  --cyan:#4f8ff0;
+  --cyan-dim: rgba(79,143,240,.32);
+  --magenta:#c4661f;
+  --magenta-dim: rgba(196,102,31,.32);
+  --amber:#d9a441;
+  --violet:#5b6b82;
+  --red:#c93838;
+  --green:#4a9d6e;
+  --text:#ffffff;
+  --muted:#ffffff;
   --radius: 2px;
   --accent: var(--cyan);
   --accent-dim: var(--cyan-dim);
@@ -52,6 +52,7 @@ body{
   background: var(--void);
   color: var(--text);
   font-family:'Rajdhani',sans-serif;
+  font-weight:500;
   overflow:hidden;
   position:relative;
   -webkit-font-smoothing:antialiased;
@@ -79,9 +80,7 @@ body{
 }
 
 #bg-scanline{
-  position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.5;
-  background: repeating-linear-gradient(0deg, rgba(0,0,0,.0) 0px, rgba(0,0,0,.0) 2px, rgba(0,0,0,.18) 3px, rgba(0,0,0,0) 4px);
-  mix-blend-mode:multiply;
+  display:none;
 }
 #bg-noise{
   position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.035;
@@ -165,7 +164,7 @@ header{
 .btn-danger:hover{background:rgba(255,56,96,.15); box-shadow:0 0 16px rgba(255,56,96,.3);}
 .btn-sm{padding:6px 10px; font-size:.7rem;}
 .btn-icon{padding:8px; aspect-ratio:1;}
-.btn:disabled{opacity:.35; cursor:not-allowed; pointer-events:none;}
+.btn:disabled{cursor:not-allowed; pointer-events:none; border-color:var(--line); color:var(--line);}
 
 /* ============ SIDEBAR ============ */
 #sidebar{
@@ -190,7 +189,7 @@ header{
 .event-card:hover{border-color:var(--accent-dim); transform:translateX(2px);}
 .event-card.active{border-color:var(--accent); background:linear-gradient(90deg, var(--accent-dim), transparent 70%), var(--panel);}
 .event-card.active::before{background:var(--accent); box-shadow:0 0 10px var(--accent);}
-.event-card.expired{opacity:.42; filter:grayscale(.6);}
+.event-card.expired{border-color:var(--red); background:rgba(201,56,56,.08);}
 .event-card.expired::before{background:var(--red);}
 .ev-name{font-family:'Orbitron',sans-serif; font-weight:700; font-size:.86rem; letter-spacing:.5px; margin-bottom:4px;}
 .ev-meta{font-family:'Share Tech Mono',monospace; font-size:.66rem; color:var(--muted); display:flex; justify-content:space-between; gap:8px;}
@@ -217,7 +216,7 @@ header{
   height:70vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
   color:var(--muted); text-align:center;
 }
-.empty-state .icon{font-size:3rem; opacity:.5; filter:drop-shadow(0 0 12px var(--accent-dim));}
+.empty-state .icon{font-size:3rem; filter:drop-shadow(0 0 12px var(--accent-dim));}
 .empty-state h2{font-family:'Orbitron',sans-serif; color:var(--text); letter-spacing:1px;}
 
 .panel-head{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;}
@@ -232,7 +231,7 @@ header{
   clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
 }
 .stat-num{font-family:'Orbitron',sans-serif; font-size:1.5rem; font-weight:700; color:var(--accent); text-shadow:0 0 10px var(--accent-dim);}
-.stat-label{font-family:'Share Tech Mono',monospace; font-size:.62rem; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-top:2px;}
+.stat-label{font-family:'Share Tech Mono',monospace; font-size:.7rem; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-top:2px;}
 
 /* Capacity gauge */
 .gauge-wrap{border:1px solid var(--line); background:var(--panel); padding:12px 14px; margin-bottom:18px; clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);}
@@ -248,9 +247,10 @@ header{
 .search-box .ic{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;}
 input,select,textarea{
   background:#0a0714; border:1px solid var(--line); color:var(--text);
-  font-family:'Rajdhani',sans-serif; font-size:.9rem; padding:10px 12px; outline:none; width:100%;
+  font-family:'Rajdhani',sans-serif; font-weight:600; font-size:1rem; padding:10px 12px; outline:none; width:100%;
 }
 input:focus,select:focus,textarea:focus{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-dim), 0 0 12px var(--accent-dim);}
+input::placeholder, textarea::placeholder{color:var(--accent); opacity:1;}
 select{cursor:pointer;}
 .chip-filter{display:flex; gap:6px; flex-wrap:wrap;}
 .chip-filter button{
@@ -283,7 +283,7 @@ select{cursor:pointer;}
 
 table{width:100%; border-collapse:collapse;}
 thead th{
-  text-align:left; font-family:'Share Tech Mono',monospace; font-size:.64rem; letter-spacing:1.5px; text-transform:uppercase;
+  text-align:left; font-family:'Share Tech Mono',monospace; font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase;
   color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; user-select:none; white-space:nowrap;
 }
 thead th:hover{color:var(--accent);}
@@ -291,13 +291,14 @@ thead th.sorted{color:var(--accent);}
 tbody tr{border-bottom:1px solid rgba(255,255,255,.05); transition:.15s;}
 tbody tr:hover{background:rgba(0,255,242,.04);}
 tbody tr.checked-in{background:rgba(57,255,136,.04);}
-tbody tr.no-show{opacity:.45;}
-tbody td{padding:10px 12px; font-size:.85rem; vertical-align:middle;}
-.g-name{font-weight:600;}
-.g-name .vip{color:var(--amber); margin-left:6px; font-size:.7rem; text-shadow:0 0 6px rgba(255,179,46,.6);}
-.g-sub{font-family:'Share Tech Mono',monospace; font-size:.68rem; color:var(--muted);}
+tbody tr.no-show{background:rgba(201,56,56,.07);}
+tbody tr.no-show td{text-decoration:line-through; text-decoration-color:var(--red);}
+tbody td{padding:12px 14px; font-size:1rem; vertical-align:middle; line-height:1.4;}
+.g-name{font-weight:700; font-size:1.05rem;}
+.g-name .vip{color:var(--amber); margin-left:6px; font-size:.78rem; text-shadow:0 0 6px rgba(255,179,46,.6);}
+.g-sub{font-family:'Rajdhani',sans-serif; font-weight:500; font-size:.9rem; color:var(--text);}
 .status-pill{
-  display:inline-flex; align-items:center; gap:5px; font-family:'Share Tech Mono',monospace; font-size:.62rem; letter-spacing:1px;
+  display:inline-flex; align-items:center; gap:5px; font-family:'Share Tech Mono',monospace; font-size:.72rem; letter-spacing:1px;
   padding:4px 9px; text-transform:uppercase; border:1px solid;
 }
 .status-pill .dot{width:6px; height:6px; border-radius:50%;}
@@ -340,7 +341,7 @@ tbody td{padding:10px 12px; font-size:.85rem; vertical-align:middle;}
 .modal-body{padding:18px;}
 .modal-foot{padding:14px 18px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
 .field{margin-bottom:14px;}
-.field label{display:block; font-family:'Share Tech Mono',monospace; font-size:.66rem; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;}
+.field label{display:block; font-family:'Share Tech Mono',monospace; font-size:.74rem; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;}
 .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0;}
 .switch{position:relative; width:42px; height:22px; flex-shrink:0;}
@@ -427,7 +428,7 @@ kbd{background:#0a0714; border:1px solid var(--line); padding:1px 6px; font-fami
 /* ===== Expiry watcher toast extra emphasis ===== */
 .toast.warn{border-color:rgba(255,179,46,.4); border-left-color:var(--amber);}
 
-.hint{font-size:.7rem; color:var(--muted); font-family:'Share Tech Mono',monospace; margin-top:4px;}
+.hint{font-size:.8rem; color:var(--muted); font-family:'Rajdhani',sans-serif; margin-top:4px;}
 .divider-label{font-family:'Share Tech Mono',monospace; font-size:.62rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; text-align:center; margin:16px 0 10px; position:relative;}
 .divider-label::before,.divider-label::after{content:''; position:absolute; top:50%; width:35%; height:1px; background:var(--line);}
 .divider-label::before{left:0;} .divider-label::after{right:0;}
@@ -455,7 +456,7 @@ kbd{background:#0a0714; border:1px solid var(--line); padding:1px 6px; font-fami
     <div class="brand">
       <div class="brand-mark"></div>
       <div class="brand-text">LA <span class="glitch">LISTA</span>
-        <small>¿ESTÁS EN LA LISTA? // NEXUS-7 OS</small>
+        <small>Manejo de club y lista de invitados</small>
       </div>
     </div>
     <div class="header-actions">
