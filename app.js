@@ -1,5 +1,5 @@
 /* ==========================================================================
-   La Lista — NEXUS-7 GUESTLIST OS
+   La Lista — Manejo de club y lista de invitados
    Motor único de la aplicación. 100% cliente, sin backend.
    Persistencia: localStorage. QR: qrcode.js + jsQR (CDN, gratuitas).
    Sync entre dispositivos: WhatsApp deep-link + QR de estado comprimido (LZString).
@@ -14,10 +14,10 @@ const DB_KEY = "mldi_db_v1";
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 
 const ACCENTS = {
-  cyan:   {accent:"#00fff2", dim:"rgba(0,255,242,.35)"},
-  magenta:{accent:"#ff2ea6", dim:"rgba(255,46,166,.35)"},
-  violet: {accent:"#7b5cff", dim:"rgba(123,92,255,.35)"},
-  amber:  {accent:"#ffb32e", dim:"rgba(255,179,46,.35)"},
+  steel:  {accent:"#4f8ff0", dim:"rgba(79,143,240,.32)"},
+  copper: {accent:"#c4661f", dim:"rgba(196,102,31,.32)"},
+  slate:  {accent:"#7d8ba3", dim:"rgba(125,139,163,.32)"},
+  amber:  {accent:"#d9a441", dim:"rgba(217,164,65,.32)"},
 };
 const ACCENT_ORDER = Object.keys(ACCENTS);
 
@@ -26,7 +26,7 @@ function defaultDB(){
     events: [],
     guests: [],
     team: [],
-    settings: { accent:"cyan", lang:"es", density:"comfortable" },
+    settings: { accent:"steel", lang:"es", density:"comfortable" },
     activeEventId: null,
   };
 }
@@ -45,8 +45,10 @@ function loadDB(){
     const raw = localStorage.getItem(DB_KEY);
     if(!raw) return seedDemo();
     const parsed = JSON.parse(raw);
-    return Object.assign(defaultDB(), parsed);
-  }catch(e){ return seedDemo(); }
+    const merged = Object.assign(defaultDB(), parsed);
+    merged.settings = Object.assign({}, defaultDB().settings, parsed.settings||{});
+    return merged;
+  }catch(e){ console.error("Error cargando datos guardados, usando demo:", e); return seedDemo(); }
 }
 function saveDB(){
   localStorage.setItem(DB_KEY, JSON.stringify(DB));
@@ -217,7 +219,7 @@ $("#ev-save").addEventListener("click", ()=>{
     DB.events.push(newEv);
     DB.activeEventId = newEv.id;
     if(window.confetti){
-      confetti({particleCount:80, spread:70, colors:['#00fff2','#ff2ea6','#7b5cff'], origin:{y:.3}});
+      confetti({particleCount:80, spread:70, colors:['#4f8ff0','#c4661f','#d9a441'], origin:{y:.3}});
     }
     toast("Evento creado ⚡","success"); sfx("success");
   }
@@ -490,7 +492,7 @@ function handleScanResult(raw){
     }
     setGuestStatus(guest.id,"checked-in");
     $("#scan-result").innerHTML = `✓ ACCESO OK — <b>${escapeHTML(guest.name)}</b> ${guest.category&&guest.category!=="General"?"· "+guest.category:""} · +${guest.plusOnes}`;
-    if(window.confetti) confetti({particleCount:40,spread:55,origin:{y:.4},colors:['#00fff2','#39ff88']});
+    if(window.confetti) confetti({particleCount:40,spread:55,origin:{y:.4},colors:['#4f8ff0','#4a9d6e']});
   }catch(e){
     $("#scan-result").innerHTML = "✗ QR no válido para La Lista.";
     sfx("error");
@@ -696,10 +698,10 @@ document.addEventListener("keydown", e=>{
 
 /* ===================== 14. TEMA / IDIOMA ===================== */
 function applyAccent(name){
-  const a = ACCENTS[name]||ACCENTS.cyan;
+  const a = ACCENTS[name] || ACCENTS.steel;
   document.documentElement.style.setProperty("--accent", a.accent);
   document.documentElement.style.setProperty("--accent-dim", a.dim);
-  DB.settings.accent = name; saveDB();
+  DB.settings.accent = ACCENTS[name] ? name : "steel"; saveDB();
 }
 $("#btn-theme").addEventListener("click", ()=>{
   const idx = ACCENT_ORDER.indexOf(DB.settings.accent);
@@ -1043,11 +1045,18 @@ function abar(label,val,max){
 }
 
 /* ===================== 19. INIT ===================== */
-applyAccent(DB.settings.accent);
-$("#btn-lang").textContent = DB.settings.lang==="es"?"EN":"ES";
-if(!DB.activeEventId && DB.events.length) DB.activeEventId = DB.events[0].id;
-render();
-checkExpiryWarnings();
-toast("Sistema listo. Bienvenido a La Lista ⚡");
+try{
+  applyAccent(DB.settings.accent);
+  $("#btn-lang").textContent = DB.settings.lang==="es"?"EN":"ES";
+  if(!DB.activeEventId && DB.events.length) DB.activeEventId = DB.events[0].id;
+  render();
+  checkExpiryWarnings();
+  toast("Sistema listo. Bienvenido a La Lista ⚡");
+}catch(err){
+  console.error("Error al iniciar La Lista:", err);
+  document.getElementById("main").innerHTML =
+    '<div class="empty-state"><div class="icon">⚠</div><h2>Ocurrió un error al cargar</h2>'+
+    '<p>Tus datos están a salvo. Intenta recargar la página. Si persiste, borra el almacenamiento local del sitio.</p></div>';
+}
 
 })();
